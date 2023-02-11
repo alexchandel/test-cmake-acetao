@@ -11,10 +11,13 @@
 
 include(tao_idl_sources)
 
+# IDL_FILES_TARGET_SOURCES(<target>
+#   <INTERFACE|PUBLIC|PRIVATE> <files>...
+#   [<INTERFACE|PUBLIC|PRIVATE> <files>... ...]
+#   [IDL_FILES_OPTIONS <option> ...])
 macro(IDL_FILES_TARGET_SOURCES target)
   set(_multi_value_options PUBLIC PRIVATE INTERFACE IDL_FILES_OPTIONS)
   cmake_parse_arguments(_arg "" "" "${_multi_value_options}" ${ARGN})
-  cmake_parse_arguments(_idl_cmd_arg "-o" "" ${_arg_IDL_FILES_OPTIONS})
 
   foreach(scope PUBLIC PRIVATE INTERFACE)
     set(_idl_sources_${scope})
@@ -35,21 +38,12 @@ macro(IDL_FILES_TARGET_SOURCES target)
       foreach(file ${_idl_sources_${scope}})
         get_source_file_property(cpps ${file} OPENDDS_CPP_FILES)
         if (NOT cpps)
-          #### NOTE use source folder
-          if(EXISTS "${file}")
-            cmake_path(GET file PARENT_PATH idl_file_folder)
-            set(OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR "${idl_file_folder}")
-          else()
-            message(FATAL_ERROR "ERROR: missing ${file}")
-          endif()
-
-          opendds_get_generated_idl_output(
-            ${target} ${file} "${_idl_cmd_arg_-o}" output_prefix output_dir)
           tao_idl_command(${target}
-                          IDL_FLAGS ${_arg_IDL_FILES_OPTIONS} -o ${output_dir}
+                          IDL_FLAGS ${_arg_IDL_FILES_OPTIONS}
                           IDL_FILES ${file})
           get_source_file_property(cpps ${file} OPENDDS_CPP_FILES)
-          target_sources(${target} ${scope} ${cpps})
+          get_source_file_property(headers ${file} OPENDDS_HEADER_FILES)
+          target_sources(${target} ${scope} ${cpps} ${headers})
         endif()
       endforeach()
     endif()

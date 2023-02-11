@@ -40,7 +40,7 @@ acetao-preprep: acetao-config acetao-mpc-cmake
 
 $(ACE_ROOT)/CMakeLists.txt: acetao-preprep
 	cd "$$ACE_ROOT/bin" && perl ./mwc.pl -type cmake ../ACE.mwc
-$(TAO_ROOT)/CMakeLists.txt: $(ACE_ROOT)/CMakeLists.txt
+$(TAO_ROOT)/CMakeLists.txt: $(ACE_ROOT)/CMakeLists.txt acetao-preprep
 	cd "$$TAO_ROOT" && perl "$$ACE_ROOT/bin/mwc.pl" -type cmake TAO_ACE.mwc
 
 acetao-cmake: $(ACE_ROOT)/CMakeLists.txt $(TAO_ROOT)/CMakeLists.txt

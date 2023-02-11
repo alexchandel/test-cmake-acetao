@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.25)
 
 project(
     TrivialTest
@@ -14,12 +14,16 @@ include(init)
 include(idl_files)
 
 
-
-set(CMAKE_CXX_STANDARD 11)
-# add_subdirectory(ACE_wrappers EXCLUDE_FROM_ALL)
-add_subdirectory(ACE_wrappers/TAO EXCLUDE_FROM_ALL)
-
-
+block()
+    set(CMAKE_CXX_STANDARD 11)
+    add_compile_options(-Wno-deprecated-declarations)
+    # add_subdirectory(ACE_wrappers EXCLUDE_FROM_ALL)
+    add_subdirectory(ACE_wrappers/TAO EXCLUDE_FROM_ALL)
+    target_compile_features(ACE PUBLIC cxx_std_11)
+    target_compile_features(TAO PUBLIC cxx_std_11)
+    target_include_directories(ACE PUBLIC ${ACE_ROOT})
+    target_include_directories(TAO PUBLIC ${ACE_ROOT}/TAO)
+endblock()
 
 add_executable(TrivialTest main.cpp)
-add_dependencies(TrivialTest ACE)
+target_link_libraries(TrivialTest ACE TAO TAO_AnyTypeCode)

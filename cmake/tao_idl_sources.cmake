@@ -56,6 +56,7 @@ function(opendds_get_generated_output_dir target output_dir_var)
   set(${output_dir_var} ${OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR} PARENT_SCOPE)
 endfunction()
 
+# Ensures existence + returns absolute path of o_arg or the default path
 function(opendds_ensure_generated_output_dir target file o_arg output_dir_var)
   if(o_arg)
     get_filename_component(abs_file "${o_arg}" ABSOLUTE)
@@ -83,6 +84,7 @@ function(opendds_get_generated_idl_output target idl_file o_arg output_prefix_va
   set(${output_dir_var} "${output_dir}" PARENT_SCOPE)
 endfunction()
 
+# tao_idl_command(<target> [IDL_FLAGS <flag> ...] IDL_FILES <idl_file> ...)
 function(tao_idl_command target)
   set(multiValueArgs IDL_FLAGS IDL_FILES)
   cmake_parse_arguments(_arg "" "" "${multiValueArgs}" ${ARGN})
@@ -110,7 +112,6 @@ function(tao_idl_command target)
   #       set(flag "${CMAKE_MATCH_1}_UNDEFINED_${CMAKE_MATCH_3}")
   #     endif()
   #   endif()
-
   #   if("${flag}" MATCHES "^-I(\\.\\..*)")
   #     list(APPEND _converted_flags -I${_rel_path_to_source_tree}/${CMAKE_MATCH_1})
   #   else()
@@ -123,27 +124,32 @@ function(tao_idl_command target)
   #     endif()
   #   endif()
   # endforeach()
+  set(_converted_flags ${_arg_IDL_FLAGS})
 
   set(optionArgs -Sch -Sci -Scc -Ssh -SS -GA -GT -GX -Gxhst -Gxhsk)
   cmake_parse_arguments(_idl_cmd_arg "${optionArgs}" "-o;-oS;-oA" "" ${_arg_IDL_FLAGS})
 
   foreach(idl_file ${_arg_IDL_FILES})
-    set(default_ouput_args)
+    get_filename_component(idl_file_path "${idl_file}" ABSOLUTE)
+    get_filename_component(idl_file_dir "${idl_file_path}" DIRECTORY)
+    set(OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR "${idl_file_dir}")
+
+    set(default_output_args)
     opendds_get_generated_idl_output(
       ${target} ${idl_file} "${_idl_cmd_arg_-o}" output_prefix output_dir)
-    if(NOT _idl_cmd_arg_-o)
-      list(APPEND default_ouput_args "-o" "${output_dir}")
-    endif()
+    # if(NOT _idl_cmd_arg_-o)
+    #   list(APPEND default_output_args "-o" "${output_dir}")
+    # endif()
     opendds_get_generated_idl_output(
       ${target} ${idl_file} "${_idl_cmd_arg_-oS}" skel_output_prefix skel_output_dir)
-    if(NOT _idl_cmd_arg_-oS)
-      list(APPEND default_ouput_args "-oS" "${skel_output_dir}")
-    endif()
+    # if(NOT _idl_cmd_arg_-oS)
+    #   list(APPEND default_output_args "-oS" "${skel_output_dir}")
+    # endif()
     opendds_get_generated_idl_output(
       ${target} ${idl_file} "${_idl_cmd_arg_-oA}" anyop_output_prefix anyop_output_dir)
-    if(NOT _idl_cmd_arg_-oA)
-      list(APPEND default_ouput_args "-oA" "${anyop_output_dir}")
-    endif()
+    # if(NOT _idl_cmd_arg_-oA)
+    #   list(APPEND default_output_args "-oA" "${anyop_output_dir}")
+    # endif()
 
     set(_STUB_HEADER_FILES)
     set(_SKEL_HEADER_FILES)
@@ -189,8 +195,6 @@ function(tao_idl_command target)
       list(APPEND _SKEL_HEADER_FILES ${CMAKE_CURRENT_BINARY_DIR}/${idl_cmd_arg-wb-skel_export_file})
     endif()
 
-    get_filename_component(idl_file_path "${idl_file}" ABSOLUTE)
-
     set(GPERF_LOCATION $<TARGET_FILE:ace_gperf>)
     if(CMAKE_CONFIGURATION_TYPES)
       get_target_property(is_gperf_imported ace_gperf IMPORTED)
@@ -217,7 +221,7 @@ function(tao_idl_command target)
       OUTPUT ${_OUTPUT_FILES}
       DEPENDS tao_idl ${tao_idl_shared_libs} ace_gperf
       MAIN_DEPENDENCY ${idl_file_path}
-      COMMAND ${CMAKE_COMMAND} -E env "DDS_ROOT=${DDS_ROOT}"  "TAO_ROOT=${TAO_INCLUDE_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E env "TAO_ROOT=${TAO_INCLUDE_DIR}"
         "${_tao_extra_lib_dirs}"
         $<TARGET_FILE:tao_idl> -g ${GPERF_LOCATION} ${TAO_CORBA_IDL_FLAGS} -Sg
         -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h
@@ -226,6 +230,7 @@ function(tao_idl_command target)
         ${_converted_flags}
         ${default_output_args}
         ${idl_file_path}
+      WORKING_DIRECTORY "${idl_file_dir}"
     )
 
     set_property(SOURCE ${idl_file_path} APPEND PROPERTY
