@@ -33,7 +33,7 @@ acetao-config: $(ACE_ROOT)/include/makeinclude/platform_macros.GNU $(ACE_ROOT)/a
 
 $(MPC_ROOT)/templates/cmake.mpd: $(ACE_ROOT)
 	rm -r "$$MPC_ROOT"
-	git clone --depth 1 https://github.com/alexchandel/MPC.git -b cmake-idl "$$MPC_ROOT"
+	git clone https://github.com/alexchandel/MPC.git -b cmake-idl "$$MPC_ROOT"
 acetao-mpc-cmake: $(MPC_ROOT)/templates/cmake.mpd
 
 acetao-preprep: acetao-config acetao-mpc-cmake
