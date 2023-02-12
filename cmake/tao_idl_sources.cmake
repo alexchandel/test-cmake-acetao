@@ -71,37 +71,47 @@ function(tao_idl_command target)
     get_filename_component(idl_file_dir "${idl_file_path}" DIRECTORY)
     get_filename_component(idl_filename_no_ext "${idl_file}" NAME_WE)
 
+    # Get absolute paths to output files, for CMake
     if(_idl_cmd_arg_-o)
-      set(output_prefix "${_idl_cmd_arg_-o}/${idl_filename_no_ext}")
+      cmake_path(ABSOLUTE_PATH _idl_cmd_arg_-o
+                 BASE_DIRECTORY "${idl_file_dir}"
+                 OUTPUT_VARIABLE stub_output_dir)
     else()
-      set(output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+      set(stub_output_dir "${idl_file_dir}")
     endif()
+    set(stub_output_prefix "${stub_output_dir}/${idl_filename_no_ext}")
 
     if(_idl_cmd_arg_-oS)
-      set(skel_output_prefix "${_idl_cmd_arg_-oS}/${idl_filename_no_ext}")
+      cmake_path(ABSOLUTE_PATH _idl_cmd_arg_-oS
+                 BASE_DIRECTORY "${idl_file_dir}"
+                 OUTPUT_VARIABLE skel_output_dir)
     else()
-      set(skel_output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+      set(skel_output_dir "${idl_file_dir}")
     endif()
+    set(skel_output_prefix "${skel_output_dir}/${idl_filename_no_ext}")
 
     if(_idl_cmd_arg_-oA)
-      set(anyop_output_prefix "${_idl_cmd_arg_-oA}/${idl_filename_no_ext}")
+      cmake_path(ABSOLUTE_PATH _idl_cmd_arg_-oA
+                 BASE_DIRECTORY "${idl_file_dir}"
+                 OUTPUT_VARIABLE anyop_output_dir)
     else()
-      set(anyop_output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+      set(anyop_output_dir "${idl_file_dir}")
     endif()
+    set(anyop_output_prefix "${anyop_output_dir}/${idl_filename_no_ext}")
 
     set(_STUB_HEADER_FILES)
     set(_SKEL_HEADER_FILES)
 
     if (NOT _idl_cmd_arg_-Sch)
-      set(_STUB_HEADER_FILES "${output_prefix}C.h")
+      set(_STUB_HEADER_FILES "${stub_output_prefix}C.h")
     endif()
 
     if (NOT _idl_cmd_arg_-Sci)
-      list(APPEND _STUB_HEADER_FILES "${output_prefix}C.inl")
+      list(APPEND _STUB_HEADER_FILES "${stub_output_prefix}C.inl")
     endif()
 
     if (NOT _idl_cmd_arg_-Scc)
-      set(_STUB_CPP_FILES "${output_prefix}C.cpp")
+      set(_STUB_CPP_FILES "${stub_output_prefix}C.cpp")
     endif()
 
     if (NOT _idl_cmd_arg_-Ssh)
