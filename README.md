@@ -12,7 +12,7 @@
 
 ### Build Dependencies
 
-* GNU `make`, which calls
+* GNU `make`, which downloads and unzips `ACE_wrappers.zip`, and invokes `mpc.pl`, calling:
   * `curl`
   * `unzip`
   * `rm`
