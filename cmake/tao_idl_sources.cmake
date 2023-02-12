@@ -23,9 +23,6 @@ set(TAO_VERSIONING_IDL_FLAGS
   -Wb,versioning_begin=TAO_BEGIN_VERSIONED_NAMESPACE_DECL
   -Wb,versioning_end=TAO_END_VERSIONED_NAMESPACE_DECL
 )
-if(NOT OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR)
-  set(OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/opendds_generated")
-endif()
 
 if (CORBA_E_MICRO)
   list(APPEND TAO_CORBA_IDL_FLAGS -DCORBA_E_MICRO -Gce)
@@ -51,40 +48,8 @@ if (NOT TAO_HAS_OPTIMIZE_COLLOCATED_INVOCATIONS)
   list(APPEND TAO_CORBA_IDL_FLAGS -Sp -Sd)
 endif()
 
-function(opendds_get_generated_output_dir target output_dir_var)
-  # TODO base output_dir_var on target
-  set(${output_dir_var} ${OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR} PARENT_SCOPE)
-endfunction()
-
-# Ensures existence + returns absolute path of o_arg or the default path
-function(opendds_ensure_generated_output_dir target file o_arg output_dir_var)
-  if(o_arg)
-    get_filename_component(abs_file "${o_arg}" ABSOLUTE)
-    ## CMake has a bug where if ${o_arg} is ".", it will add /TRUE to the
-    ## end of the absolute path.  We'll just chop it off.
-    string(REGEX REPLACE "/TRUE$" "" abs_file ${abs_file})
-    set(output_dir ${abs_file})
-  else()
-    opendds_get_generated_output_dir("${target}" output_dir)
-  endif()
-  file(MAKE_DIRECTORY "${output_dir}")
-  set(${output_dir_var} "${output_dir}" PARENT_SCOPE)
-endfunction()
-
-function(opendds_get_generated_file_path target file output_path_var)
-  opendds_ensure_generated_output_dir(${target} ${file} "" output_dir)
-  get_filename_component(filename ${file} NAME)
-  set(${output_path_var} "${output_dir}/${filename}" PARENT_SCOPE)
-endfunction()
-
-function(opendds_get_generated_idl_output target idl_file o_arg output_prefix_var output_dir_var)
-  opendds_ensure_generated_output_dir(${target} ${idl_file} "${o_arg}" output_dir)
-  get_filename_component(idl_filename_no_ext ${idl_file} NAME_WE)
-  set(${output_prefix_var} "${output_dir}/${idl_filename_no_ext}" PARENT_SCOPE)
-  set(${output_dir_var} "${output_dir}" PARENT_SCOPE)
-endfunction()
-
 # tao_idl_command(<target> [IDL_FLAGS <flag> ...] IDL_FILES <idl_file> ...)
+# The default output directory is the IDL file's.
 function(tao_idl_command target)
   set(multiValueArgs IDL_FLAGS IDL_FILES)
   cmake_parse_arguments(_arg "" "" "${multiValueArgs}" ${ARGN})
@@ -98,58 +63,31 @@ function(tao_idl_command target)
   set(_working_binary_dir ${CMAKE_CURRENT_BINARY_DIR})
   set(_working_source_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
-  ## convert all include paths to be relative to binary tree instead of to source tree
-  # file(RELATIVE_PATH _rel_path_to_source_tree ${_working_binary_dir} ${_working_source_dir})
-  # foreach(flag ${_arg_IDL_FLAGS})
-  #   ## Because we no longer require TAO_ROOT to be set as an environment
-  #   ## variable, we need to replace instances of $(TAO_ROOT) with the actual
-  #   ## value of the TAO_ROOT CMake variable.
-  #   string(REGEX MATCH "(.*)\\$\\(([^\\)]+)\\)(.*)" matched "${flag}")
-  #   if (matched)
-  #     if (${${CMAKE_MATCH_2}})
-  #       set(flag "${CMAKE_MATCH_1}${${${CMAKE_MATCH_2}}}${CMAKE_MATCH_3}")
-  #     else()
-  #       set(flag "${CMAKE_MATCH_1}_UNDEFINED_${CMAKE_MATCH_3}")
-  #     endif()
-  #   endif()
-  #   if("${flag}" MATCHES "^-I(\\.\\..*)")
-  #     list(APPEND _converted_flags -I${_rel_path_to_source_tree}/${CMAKE_MATCH_1})
-  #   else()
-  #     list(APPEND _converted_flags ${flag})
-  #     # if the flag is like "-Wb,stub_export_file=filename" then set the varilabe
-  #     # "idl_cmd_arg-wb-stub_export_file" to filename
-  #     string(REGEX MATCH "^-Wb,([^=]+)=(.+)" m "${flag}")
-  #     if(m)
-  #       set(idl_cmd_arg-wb-${CMAKE_MATCH_1} ${CMAKE_MATCH_2})
-  #     endif()
-  #   endif()
-  # endforeach()
-  set(_converted_flags ${_arg_IDL_FLAGS})
-
   set(optionArgs -Sch -Sci -Scc -Ssh -SS -GA -GT -GX -Gxhst -Gxhsk)
   cmake_parse_arguments(_idl_cmd_arg "${optionArgs}" "-o;-oS;-oA" "" ${_arg_IDL_FLAGS})
 
   foreach(idl_file ${_arg_IDL_FILES})
     get_filename_component(idl_file_path "${idl_file}" ABSOLUTE)
     get_filename_component(idl_file_dir "${idl_file_path}" DIRECTORY)
-    set(OPENDDS_DEFAULT_GENERATED_OUTPUT_DIR "${idl_file_dir}")
+    get_filename_component(idl_filename_no_ext "${idl_file}" NAME_WE)
 
-    set(default_output_args)
-    opendds_get_generated_idl_output(
-      ${target} ${idl_file} "${_idl_cmd_arg_-o}" output_prefix output_dir)
-    # if(NOT _idl_cmd_arg_-o)
-    #   list(APPEND default_output_args "-o" "${output_dir}")
-    # endif()
-    opendds_get_generated_idl_output(
-      ${target} ${idl_file} "${_idl_cmd_arg_-oS}" skel_output_prefix skel_output_dir)
-    # if(NOT _idl_cmd_arg_-oS)
-    #   list(APPEND default_output_args "-oS" "${skel_output_dir}")
-    # endif()
-    opendds_get_generated_idl_output(
-      ${target} ${idl_file} "${_idl_cmd_arg_-oA}" anyop_output_prefix anyop_output_dir)
-    # if(NOT _idl_cmd_arg_-oA)
-    #   list(APPEND default_output_args "-oA" "${anyop_output_dir}")
-    # endif()
+    if(_idl_cmd_arg_-o)
+      set(output_prefix "${_idl_cmd_arg_-o}/${idl_filename_no_ext}")
+    else()
+      set(output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+    endif()
+
+    if(_idl_cmd_arg_-oS)
+      set(skel_output_prefix "${_idl_cmd_arg_-oS}/${idl_filename_no_ext}")
+    else()
+      set(skel_output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+    endif()
+
+    if(_idl_cmd_arg_-oA)
+      set(anyop_output_prefix "${_idl_cmd_arg_-oA}/${idl_filename_no_ext}")
+    else()
+      set(anyop_output_prefix "${idl_file_dir}/${idl_filename_no_ext}")
+    endif()
 
     set(_STUB_HEADER_FILES)
     set(_SKEL_HEADER_FILES)
@@ -227,8 +165,7 @@ function(tao_idl_command target)
         -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h
         --idl-version 4 -as --unknown-annotations ignore
         -I${TAO_INCLUDE_DIR} -I${_working_source_dir}
-        ${_converted_flags}
-        ${default_output_args}
+        ${_arg_IDL_FLAGS}
         ${idl_file_path}
       WORKING_DIRECTORY "${idl_file_dir}"
     )
