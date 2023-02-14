@@ -1,5 +1,26 @@
-# Distributed under the OpenDDS License. See accompanying LICENSE
-# file or http://www.opendds.org/license.html for details.
+if(NOT DEFINED ACE_ROOT)
+  message(SEND_ERROR "Failed to locate ACE_ROOT")
+endif()
+set(ACE_INCLUDE_DIRS "${ACE_ROOT}")
+set(ACE_LIB_DIR "${ACE_ROOT}/lib")
+set(ACE_BIN_DIR "${ACE_ROOT}/bin")
+
+
+if(NOT DEFINED TAO_ROOT)
+  if(EXISTS "${ACE_ROOT}/TAO")
+    set(TAO_ROOT "${ACE_ROOT}/TAO")
+  else()
+    message(FATAL_ERROR "Failed to locate TAO_ROOT")
+  endif()
+endif()
+set(TAO_INCLUDE_DIR "${TAO_ROOT}")
+set(TAO_INCLUDE_DIRS
+  "${TAO_INCLUDE_DIR}"
+  "${TAO_INCLUDE_DIR}/orbsvcs"
+)
+set(TAO_LIB_DIR "${ACE_LIB_DIR}")
+set(TAO_BIN_DIR "${ACE_BIN_DIR}")
+
 
 macro(_tao_append_runtime_lib_dir_to_path dst)
   if (MSVC)
@@ -193,3 +214,42 @@ function(tao_idl_command target)
         ${_ANYOP_HEADER_FILES})
   endforeach()
 endfunction()
+
+# IDL_FILES_TARGET_SOURCES(<target>
+#   <INTERFACE|PUBLIC|PRIVATE> <files>...
+#   [<INTERFACE|PUBLIC|PRIVATE> <files>... ...]
+#   [IDL_FILES_OPTIONS <option> ...])
+macro(IDL_FILES_TARGET_SOURCES target)
+  set(_multi_value_options PUBLIC PRIVATE INTERFACE IDL_FILES_OPTIONS)
+  cmake_parse_arguments(_arg "" "" "${_multi_value_options}" ${ARGN})
+
+  foreach(scope PUBLIC PRIVATE INTERFACE)
+    set(_idl_sources_${scope})
+
+    if(_arg_${scope})
+      foreach(src ${_arg_${scope}})
+        get_filename_component(src ${src} ABSOLUTE)
+
+        if("${src}" MATCHES "\\.p?idl$")
+          list(APPEND _idl_sources_${scope} ${src})
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+
+  foreach(scope PUBLIC PRIVATE INTERFACE)
+    if (_idl_sources_${scope})
+      foreach(file ${_idl_sources_${scope}})
+        get_source_file_property(cpps ${file} OPENDDS_CPP_FILES)
+        if (NOT cpps)
+          tao_idl_command(${target}
+                          IDL_FLAGS ${_arg_IDL_FILES_OPTIONS}
+                          IDL_FILES ${file})
+          get_source_file_property(cpps ${file} OPENDDS_CPP_FILES)
+          # get_source_file_property(cpp_headers ${file} OPENDDS_HEADER_FILES)
+          target_sources(${target} ${scope} ${cpps})
+        endif()
+      endforeach()
+    endif()
+  endforeach()
+endmacro()
