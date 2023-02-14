@@ -37,12 +37,14 @@ if(NOT AceTao_POPULATED)
     # HACK: get latest MPC
     find_package(AceTaoMPC)
 
-    execute_process(
-        COMMAND
-            ${CMAKE_COMMAND} -E env "ACE_ROOT=${ACE_ROOT}" "TAO_ROOT=${TAO_ROOT}" "MPC_ROOT=${MPC_ROOT}"
-                perl "${ACE_ROOT}/bin/mwc.pl" -type cmake TAO_ACE.mwc
-        WORKING_DIRECTORY "${TAO_ROOT}"
-    )
+    if((NOT EXISTS ${TAO_ROOT}/CMakeLists.txt) OR (${TAO_ROOT}/TAO_ACE.mwc IS_NEWER_THAN ${TAO_ROOT}/CMakeLists.txt))
+        execute_process(
+            COMMAND
+                ${CMAKE_COMMAND} -E env "ACE_ROOT=${ACE_ROOT}" "TAO_ROOT=${TAO_ROOT}" "MPC_ROOT=${MPC_ROOT}"
+                    perl "${ACE_ROOT}/bin/mwc.pl" -type cmake TAO_ACE.mwc
+            WORKING_DIRECTORY "${TAO_ROOT}"
+        )
+    endif()
 
     # HACK: fix TAO/TAO_IDL/CMakeLists.TAO_IDL_BE_VIS_[A-Z]
     set(IN_FILE ${TAO_ROOT}/TAO_IDL/CMakeLists.txt)
