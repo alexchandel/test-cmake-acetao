@@ -5,6 +5,7 @@ find_package_handle_standard_args(AceTao
 include(FetchContent)
 
 cmake_path(GET ACE_ROOT PARENT_PATH DOWNLOAD_DIR)
+set(AceTao_VERSION 7.0.11)
 FetchContent_Declare(AceTao
     URL             https://github.com/DOCGroup/ACE_TAO/releases/download/ACE%2BTAO-7_0_11/ACE+TAO-7.0.11.zip
     URL_HASH        MD5=5451e46525b3075dbcc983e002b7d2b7
@@ -71,4 +72,9 @@ if(NOT AceTao_POPULATED)
     target_include_directories(TAO PUBLIC ${ACE_ROOT}/TAO)
     target_include_directories(TAO PUBLIC ${ACE_ROOT}/TAO/orbsvcs)
 
+    if(${AceTao_VERSION} VERSION_LESS_EQUAL 7.0.11)
+        if(WIN32)
+            target_link_libraries(ACE PUBLIC iphlpapi)
+        endif()
+    endif()
 endif()
