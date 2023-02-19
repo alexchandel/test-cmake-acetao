@@ -16,6 +16,7 @@ FetchContent_GetProperties(AceTao)
 if(NOT AceTao_POPULATED)
     FetchContent_Populate(AceTao)
 
+    # Define ACE_ & TAO_ variables
     include(InitAceTao)
 
     # load platform-specific configurations
@@ -31,18 +32,20 @@ if(NOT AceTao_POPULATED)
         ONLY_IF_DIFFERENT
     )
 
+    # Get latest MPC (capable of emitting CMake)
     if(NOT DEFINED MPC_ROOT)
         set(MPC_ROOT ${ACE_ROOT}/MPC)
     endif()
-    # HACK: get latest MPC
     find_package(AceTaoMPC)
 
+    # Generate CMakeLists
     if((NOT EXISTS ${TAO_ROOT}/CMakeLists.txt) OR (${TAO_ROOT}/TAO_ACE.mwc IS_NEWER_THAN ${TAO_ROOT}/CMakeLists.txt))
         execute_process(
             COMMAND
                 ${CMAKE_COMMAND} -E env "ACE_ROOT=${ACE_ROOT}" "TAO_ROOT=${TAO_ROOT}" "MPC_ROOT=${MPC_ROOT}"
                     perl "${ACE_ROOT}/bin/mwc.pl" -type cmake TAO_ACE.mwc
             WORKING_DIRECTORY "${TAO_ROOT}"
+            COMMAND_ERROR_IS_FATAL ANY
         )
     endif()
 
@@ -57,7 +60,9 @@ if(NOT AceTao_POPULATED)
         endforeach()
     endif()
 
-    add_compile_options(-Wno-deprecated-declarations)
+    if(NOT MSVC)
+        add_compile_options(-Wno-deprecated-declarations)
+    endif()
     # add_subdirectory(${ACE_ROOT} EXCLUDE_FROM_ALL)
     add_subdirectory(${ACE_ROOT}/TAO EXCLUDE_FROM_ALL)
     target_compile_features(ACE PUBLIC cxx_std_11)
