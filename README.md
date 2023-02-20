@@ -4,11 +4,11 @@
 
 `cd` into the checkout and run:
 
-* `mkdir build`
-* `cd build && cmake ..`
-* `cmake --build .`
+```sh
+cmake -S . -B build
+cmake --build build
+```
 
 ### Build Dependencies
 
 * `cmake`
-
