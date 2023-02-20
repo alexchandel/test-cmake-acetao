@@ -64,7 +64,7 @@ if(NOT AceTao_POPULATED)
     if(NOT MSVC)
         add_compile_options(-Wno-deprecated-declarations)
     endif()
-    # add_subdirectory(${ACE_ROOT} EXCLUDE_FROM_ALL)
+    # add_subdirectory(${ACE_ROOT} EXCLUDE_FROM_ALL) # included by TAO
     add_subdirectory(${ACE_ROOT}/TAO EXCLUDE_FROM_ALL)
     target_compile_features(ACE PUBLIC cxx_std_11)
     target_compile_features(TAO PUBLIC cxx_std_11)
@@ -75,6 +75,18 @@ if(NOT AceTao_POPULATED)
     if(${AceTao_VERSION} VERSION_LESS_EQUAL 7.0.11)
         if(WIN32)
             target_link_libraries(ACE PUBLIC iphlpapi)
+            if(MSVC)
+                target_compile_options(ACE PRIVATE /wd4355)
+                target_compile_definitions(ACE PRIVATE
+                    _CRT_SECURE_NO_WARNINGS _CRT_SECURE_NO_DEPRECATE _CRT_NONSTDC_NO_DEPRECATE
+                    _SCL_SECURE_NO_WARNINGS _WINSOCK_DEPRECATED_NO_WARNINGS
+                )
+            endif()
         endif()
+    endif()
+
+    if(MSVC)
+        # MSBuild adds some repeated ACE dependencies without absolute paths
+        target_link_directories(ACE INTERFACE ${ACE_LIB_DIR})
     endif()
 endif()
