@@ -273,7 +273,7 @@ macro(IDL_FILES_TARGET_SOURCES target)
           get_source_file_property(cpps ${file} OPENDDS_CPP_FILES)
           get_source_file_property(cpp_headers ${file} OPENDDS_HEADER_FILES)
           cmake_path(GET file STEM LAST_ONLY file_basename)
-          add_library("${target}.${file_basename}" OBJECT ${cpps} ${cpp_headers})
+          add_library("${target}.${file_basename}" INTERFACE ${cpps} ${cpp_headers})
           # add to target, if it exists
           if (TARGET ${target})
             target_sources(${target} ${scope} ${cpps} ${cpp_headers})

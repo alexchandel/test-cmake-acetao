@@ -12,3 +12,4 @@ cmake --build build
 ### Build Dependencies
 
 * `cmake`
+* `perl`

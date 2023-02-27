@@ -10,13 +10,6 @@ project(
 
 # set global variables
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
-if(WIN32)
-    set(TARGET x86_64-pc-windows-msvc)
-elseif(APPLE)
-    set(TARGET x86_64-apple-darwin)
-else()
-    set(TARGET x86_64-unknown-linux-gnu)
-endif()
 
 set(ACE_ROOT "${CMAKE_CURRENT_LIST_DIR}/opt/ACE_wrappers")
 find_package(AceTao)

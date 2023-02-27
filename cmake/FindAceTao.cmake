@@ -1,6 +1,6 @@
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(AceTao
-    REQUIRED_VARS ACE_ROOT TARGET
+    REQUIRED_VARS ACE_ROOT
 )
 include(FetchContent)
 
