@@ -35,11 +35,12 @@ if(NOT AceTao_POPULATED)
     find_package(AceTaoMPC)
 
     # Generate CMakeLists
+    find_package(Perl REQUIRED)
     if((NOT EXISTS ${TAO_ROOT}/CMakeLists.txt) OR (${TAO_ROOT}/TAO_ACE.mwc IS_NEWER_THAN ${TAO_ROOT}/CMakeLists.txt))
         execute_process(
             COMMAND
                 ${CMAKE_COMMAND} -E env "ACE_ROOT=${ACE_ROOT}" "TAO_ROOT=${TAO_ROOT}" "MPC_ROOT=${MPC_ROOT}"
-                    perl "${ACE_ROOT}/bin/mwc.pl" -type cmake TAO_ACE.mwc
+                    "${PERL_EXECUTABLE}" "${ACE_ROOT}/bin/mwc.pl" -type cmake TAO_ACE.mwc
             WORKING_DIRECTORY "${TAO_ROOT}"
             COMMAND_ERROR_IS_FATAL ANY
         )
