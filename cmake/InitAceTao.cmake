@@ -24,14 +24,16 @@ set(TAO_BIN_DIR "${ACE_BIN_DIR}")
 
 macro(_tao_append_runtime_lib_dir_to_path dst)
   if (MSVC)
-    set(${dst} "PATH=")
+    # prepend tao_idl bin + TAO dlls + MSVC bin dir
+    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH new_tao_dirs) # tao_idl calls cl.exe
+    string(PREPEND new_tao_dirs "${TAO_BIN_DIR};${TAO_LIB_DIR};")
+    cmake_path(CONVERT "${new_tao_dirs}" TO_NATIVE_PATH_LIST new_tao_dirs)
+    set(${dst} "PATH=${new_tao_dirs}")
+
+    # append rest of PATH, so that TAO dlls in PATH don't conflict
     if (DEFINED ENV{PATH})
-      string(APPEND ${dst} "$ENV{PATH};")
+      string(APPEND ${dst} ";$ENV{PATH}")
     endif()
-    cmake_path(CONVERT "${TAO_BIN_DIR};${TAO_LIB_DIR}" TO_NATIVE_PATH_LIST tmp)
-    string(APPEND ${dst} "${tmp}")
-    cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH tmp)
-    string(APPEND ${dst} ";${tmp}")
   else()
     if(APPLE)
         set(LD_LIBRARY_PATH_VAR "DYLD_FALLBACK_LIBRARY_PATH")
@@ -40,11 +42,11 @@ macro(_tao_append_runtime_lib_dir_to_path dst)
     endif()
     set(${dst} "${LD_LIBRARY_PATH_VAR}=")
     if (DEFINED ENV{${LD_LIBRARY_PATH_VAR}})
-      string(REPLACE "\\" "/" tmp "$ENV{${LD_LIBRARY_PATH_VAR}}") # why??
-      string(APPEND ${dst} "${tmp}:")
+      string(REPLACE "\\" "/" new_tao_dirs "$ENV{${LD_LIBRARY_PATH_VAR}}") # why??
+      string(APPEND ${dst} "${new_tao_dirs}:")
     endif()
-    string(REPLACE "\\" "/" tmp ${TAO_LIB_DIR}) # why??
-    set(${dst} "\"${${dst}}${tmp}\"")
+    string(REPLACE "\\" "/" new_tao_dirs ${TAO_LIB_DIR}) # why??
+    set(${dst} "\"${${dst}}${new_tao_dirs}\"")
   endif()
 endmacro()
 
