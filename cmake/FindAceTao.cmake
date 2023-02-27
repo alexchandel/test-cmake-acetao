@@ -23,13 +23,8 @@ if(NOT AceTao_POPULATED)
     # load platform-specific configurations
     # these could technically be generated at build time
     file(COPY_FILE
-        ${CMAKE_CURRENT_LIST_DIR}/AceTao/config.${TARGET}.h
+        ${CMAKE_CURRENT_LIST_DIR}/AceTao/config.h
         ${ACE_ROOT}/ace/config.h
-        ONLY_IF_DIFFERENT
-    )
-    file(COPY_FILE
-        ${CMAKE_CURRENT_LIST_DIR}/AceTao/platform_macros.${TARGET}.GNU
-        ${ACE_ROOT}/include/makeinclude/platform_macros.GNU
         ONLY_IF_DIFFERENT
     )
 
@@ -50,7 +45,7 @@ if(NOT AceTao_POPULATED)
         )
     endif()
 
-    # HACK: fix TAO/TAO_IDL/CMakeLists.TAO_IDL_BE_VIS_[A-Z]
+    # HACK: delete TAO/TAO_IDL/CMakeLists.TAO_IDL_BE_VIS_[A-Z] due to unhandled prop:static
     set(IN_FILE ${TAO_ROOT}/TAO_IDL/CMakeLists.txt)
     if(EXISTS "${IN_FILE}")
         file(STRINGS ${IN_FILE} LINES)
