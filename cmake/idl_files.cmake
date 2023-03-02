@@ -7,11 +7,7 @@ set(ACE_BIN_DIR "${ACE_ROOT}/bin")
 
 
 if(NOT DEFINED TAO_ROOT)
-  if(EXISTS "${ACE_ROOT}/TAO")
-    set(TAO_ROOT "${ACE_ROOT}/TAO")
-  else()
-    message(FATAL_ERROR "Failed to locate TAO_ROOT")
-  endif()
+  message(FATAL_ERROR "Failed to locate TAO_ROOT")
 endif()
 set(TAO_INCLUDE_DIR "${TAO_ROOT}")
 set(TAO_INCLUDE_DIRS
@@ -21,12 +17,21 @@ set(TAO_INCLUDE_DIRS
 set(TAO_LIB_DIR "${ACE_LIB_DIR}")
 set(TAO_BIN_DIR "${ACE_BIN_DIR}")
 
+# target_exe (#) GET_RUNTIME_DEPENDENCIES |> PARENT_PATH |> REMOVE_DUPLICATES
+macro(_exe_get_runtime_lib_dirs target_exe dll_folders)
+  file(GET_RUNTIME_DEPENDENCIES RESOLVED_DEPENDENCIES_VAR dlls EXECUTABLES $<TARGET_FILE:target_exe>)
+  set(${dll_folders})
+  foreach(dll ${dlls})
+    cmake_path(GET dll PARENT_PATH dll_folder)
+    list(APPEND ${dll_folders} "${dll_folder}")
+  endforeach()
+  list(REMOVE_DUPLICATES ${dll_folders})
+endmacro()
 
-macro(_tao_append_runtime_lib_dir_to_path dst)
-  if (MSVC)
+macro(_tao_append_runtime_lib_dirs_to_path dst)
+  if (CMAKE_HOST_WIN32)
     # prepend tao_idl bin + TAO dlls + MSVC bin dir
     cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH new_tao_dirs) # tao_idl calls cl.exe
-    string(PREPEND new_tao_dirs "${TAO_BIN_DIR};${TAO_LIB_DIR};")
     cmake_path(CONVERT "${new_tao_dirs}" TO_NATIVE_PATH_LIST new_tao_dirs)
     set(${dst} "PATH=${new_tao_dirs}")
 
@@ -34,19 +39,6 @@ macro(_tao_append_runtime_lib_dir_to_path dst)
     if (DEFINED ENV{PATH})
       string(APPEND ${dst} ";$ENV{PATH}")
     endif()
-  else()
-    if(APPLE)
-        set(LD_LIBRARY_PATH_VAR "DYLD_FALLBACK_LIBRARY_PATH")
-    else()
-        set(LD_LIBRARY_PATH_VAR "LD_LIBRARY_PATH")
-    endif()
-    set(${dst} "${LD_LIBRARY_PATH_VAR}=")
-    if (DEFINED ENV{${LD_LIBRARY_PATH_VAR}})
-      string(REPLACE "\\" "/" new_tao_dirs "$ENV{${LD_LIBRARY_PATH_VAR}}") # why??
-      string(APPEND ${dst} "${new_tao_dirs}:")
-    endif()
-    string(REPLACE "\\" "/" new_tao_dirs ${TAO_LIB_DIR}) # why??
-    set(${dst} "\"${${dst}}${new_tao_dirs}\"")
   endif()
 endmacro()
 
@@ -188,7 +180,7 @@ function(tao_idl_command target)
       endif()
     endif()
 
-    set(GPERF_LOCATION $<TARGET_FILE:ace_gperf>)
+    set(GPERF_LOCATION $<TARGET_FILE_DIR:ace_gperf>)
     if(CMAKE_CONFIGURATION_TYPES)
       get_target_property(is_gperf_imported ace_gperf IMPORTED)
       if (is_gperf_imported)
@@ -208,13 +200,13 @@ function(tao_idl_command target)
       ${_SKEL_CPP_FILES}
       ${_ANYOP_CPP_FILES})
 
-    _tao_append_runtime_lib_dir_to_path(_tao_extra_lib_dirs)
+    _tao_append_runtime_lib_dirs_to_path(_tao_extra_lib_dirs)
 
     add_custom_command(
       OUTPUT ${_OUTPUT_FILES}
       DEPENDS tao_idl ${tao_idl_shared_libs} ace_gperf
       MAIN_DEPENDENCY ${idl_file_path}
-      COMMAND ${CMAKE_COMMAND} -E env "TAO_ROOT=${TAO_INCLUDE_DIR}"
+      COMMAND ${CMAKE_COMMAND} -E env "\"TAO_ROOT=${TAO_ROOT}\"" "\"ACE_ROOT=${ACE_ROOT}\""
         "${_tao_extra_lib_dirs}"
         $<TARGET_FILE:tao_idl> -g ${GPERF_LOCATION} ${TAO_CORBA_IDL_FLAGS} -Sg
         -Wb,pre_include=ace/pre.h -Wb,post_include=ace/post.h
