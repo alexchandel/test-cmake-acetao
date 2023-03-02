@@ -44,3 +44,12 @@ target_link_libraries(TrivialTest
     TAO_Svc_Utils
     TAO_Valuetype
 )
+
+add_dependencies(TrivialTest tao_cosnaming)
+
+install(TARGETS TrivialTest tao_cosnaming RUNTIME)
+install(FILES
+    $<TARGET_RUNTIME_DLLS:TrivialTest>
+    $<TARGET_RUNTIME_DLLS:tao_cosnaming>
+    TYPE BIN
+)
