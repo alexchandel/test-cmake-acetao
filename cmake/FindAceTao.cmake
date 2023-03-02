@@ -18,7 +18,13 @@ if(NOT AceTao_POPULATED)
     FetchContent_Populate(AceTao)
 
     # Define ACE_ & TAO_ variables
-    include(InitAceTao)
+    if(NOT DEFINED TAO_ROOT)
+        if(EXISTS "${ACE_ROOT}/TAO")
+            set(TAO_ROOT "${ACE_ROOT}/TAO")
+        else()
+            message(FATAL_ERROR "Failed to locate TAO_ROOT")
+        endif()
+    endif()
 
     # load platform-specific configurations
     # these could technically be generated at build time
@@ -30,7 +36,11 @@ if(NOT AceTao_POPULATED)
 
     # Get latest MPC (capable of emitting CMake)
     if(NOT DEFINED MPC_ROOT)
-        set(MPC_ROOT ${ACE_ROOT}/MPC)
+        if(EXISTS "${ACE_ROOT}/MPC")
+            set(MPC_ROOT ${ACE_ROOT}/MPC)
+        else()
+            message(FATAL_ERROR "Failed to locate MPC_ROOT")
+        endif()
     endif()
     find_package(AceTaoMPC)
 
@@ -79,10 +89,5 @@ if(NOT AceTao_POPULATED)
                 )
             endif()
         endif()
-    endif()
-
-    if(MSVC)
-        # MSBuild adds some repeated ACE dependencies without absolute paths
-        target_link_directories(ACE INTERFACE ${ACE_LIB_DIR})
     endif()
 endif()
