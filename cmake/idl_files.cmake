@@ -17,17 +17,7 @@ set(TAO_INCLUDE_DIRS
 set(TAO_LIB_DIR "${ACE_LIB_DIR}")
 set(TAO_BIN_DIR "${ACE_BIN_DIR}")
 
-# target_exe (#) GET_RUNTIME_DEPENDENCIES |> PARENT_PATH |> REMOVE_DUPLICATES
-macro(_exe_get_runtime_lib_dirs target_exe dll_folders)
-  file(GET_RUNTIME_DEPENDENCIES RESOLVED_DEPENDENCIES_VAR dlls EXECUTABLES $<TARGET_FILE:target_exe>)
-  set(${dll_folders})
-  foreach(dll ${dlls})
-    cmake_path(GET dll PARENT_PATH dll_folder)
-    list(APPEND ${dll_folders} "${dll_folder}")
-  endforeach()
-  list(REMOVE_DUPLICATES ${dll_folders})
-endmacro()
-
+# add C++ compiler to path on Windows.
 macro(_tao_append_runtime_lib_dirs_to_path dst)
   if (CMAKE_HOST_WIN32)
     # prepend tao_idl bin + TAO dlls + MSVC bin dir

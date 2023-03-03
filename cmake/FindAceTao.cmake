@@ -67,18 +67,39 @@ if(NOT AceTao_POPULATED)
         endforeach()
     endif()
 
+    # Silence useless warnings on old releases
     if(NOT MSVC)
         add_compile_options(-Wno-deprecated-declarations)
     endif()
-    # add_subdirectory(${ACE_ROOT} EXCLUDE_FROM_ALL) # included by TAO
+
+    # Finally, import the generated CMakeLists and create targets
     add_subdirectory(${ACE_ROOT}/TAO EXCLUDE_FROM_ALL)
-    target_compile_features(ACE PUBLIC cxx_std_11)
-    target_compile_features(TAO PUBLIC cxx_std_11)
+
+    # Add public include folders to ACE+TAO targets (theirs are all private)
     target_include_directories(ACE PUBLIC ${ACE_ROOT})
     target_include_directories(TAO PUBLIC ${ACE_ROOT}/TAO)
     target_include_directories(TAO PUBLIC ${ACE_ROOT}/TAO/orbsvcs)
 
+     # Fixup missing system dependencies in ACE+TAO
+    if(CMAKE_DL_LIBS)
+        target_link_libraries(ACE PUBLIC ${CMAKE_DL_LIBS})
+    endif()
+    find_package(Threads)
+    if(Threads_FOUND)
+        target_link_libraries(ACE PUBLIC Threads::Threads)
+    endif()
+    if(UNIX AND NOT APPLE)
+        find_library(RT_LIBS rt)
+        if(RT_LIBS)
+            target_link_libraries(ACE PUBLIC ${RT_LIBS})
+        endif()
+    endif()
+
+    # Backport CMake compatibility to older ACE+TAO versions
     if(${AceTao_VERSION} VERSION_LESS_EQUAL 7.0.11)
+        target_compile_features(ACE PUBLIC cxx_std_11)
+        target_compile_features(TAO PUBLIC cxx_std_11)
+
         if(WIN32)
             target_link_libraries(ACE PUBLIC iphlpapi)
             if(MSVC)
@@ -89,5 +110,9 @@ if(NOT AceTao_POPULATED)
                 )
             endif()
         endif()
+    else()
+        # Fixup current ACE+TAO versions
+        target_compile_features(ACE PUBLIC cxx_std_14) # >= 7.0.12
+        target_compile_features(TAO PUBLIC cxx_std_14)
     endif()
 endif()
